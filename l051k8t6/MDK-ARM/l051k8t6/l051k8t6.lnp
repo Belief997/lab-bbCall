@@ -20,6 +20,8 @@
 "l051k8t6\stm32l0xx_hal_cortex.o"
 "l051k8t6\stm32l0xx_hal_tim.o"
 "l051k8t6\stm32l0xx_hal_tim_ex.o"
+"l051k8t6\stm32l0xx_hal_uart.o"
+"l051k8t6\stm32l0xx_hal_uart_ex.o"
 "l051k8t6\system_stm32l0xx.o"
 "l051k8t6\croutine.o"
 "l051k8t6\event_groups.o"

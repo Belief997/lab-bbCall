@@ -23,6 +23,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stm32l0xx.h" // Device header
 
 /* USER CODE END Includes */
 
@@ -41,9 +42,12 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
+UART_HandleTypeDef huart1;
+
 osThreadId defaultTaskHandle;
 osThreadId GPIOTestHandle;
 osThreadId TaskTestHandle;
+osThreadId UartTestHandle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -51,9 +55,11 @@ osThreadId TaskTestHandle;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_USART1_UART_Init(void);
 void StartDefaultTask(void const * argument);
 void StartGPIO(void const * argument);
 void StarTest(void const * argument);
+void StartUart(void const * argument);
 
 /* USER CODE BEGIN PFP */
 
@@ -92,6 +98,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
 
   /* USER CODE END 2 */
@@ -125,6 +132,10 @@ int main(void)
   osThreadDef(TaskTest, StarTest, osPriorityLow, 0, 128);
   TaskTestHandle = osThreadCreate(osThread(TaskTest), NULL);
 
+  /* definition and creation of UartTest */
+  osThreadDef(UartTest, StartUart, osPriorityNormal, 0, 128);
+  UartTestHandle = osThreadCreate(osThread(UartTest), NULL);
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -152,6 +163,7 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
+  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
 
   /** Configure the main internal regulator output voltage
   */
@@ -183,6 +195,47 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+  PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USART1;
+  PeriphClkInit.Usart1ClockSelection = RCC_USART1CLKSOURCE_PCLK2;
+  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
+  {
+    Error_Handler();
+  }
+}
+
+/**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  huart1.Instance = USART1;
+  huart1.Init.BaudRate = 115200;
+  huart1.Init.WordLength = UART_WORDLENGTH_8B;
+  huart1.Init.StopBits = UART_STOPBITS_1;
+  huart1.Init.Parity = UART_PARITY_NONE;
+  huart1.Init.Mode = UART_MODE_TX_RX;
+  huart1.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart1.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart1.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart1.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
 }
 
 /**
@@ -196,6 +249,7 @@ static void MX_GPIO_Init(void)
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
@@ -228,19 +282,7 @@ void StartDefaultTask(void const * argument)
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
   for(;;)
-  {
-		static char p0 = 0;
-		if(p0)
-		{
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
-			p0 = 0;
-    }
-		else
-		{
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
-			p0 = 1;
-    }
-		
+  {	
 		osDelay(1);
   }
   /* USER CODE END 5 */
@@ -259,16 +301,16 @@ void StartGPIO(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-		static char p1 = 1;
-		if(p1)
-		{
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
-			p1 = 0;
+	static char p1 = 1;
+	if(p1)
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+		p1 = 0;
     }
-		else
-		{
-			HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
-			p1 = 1;
+	else
+	{
+		HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
+		p1 = 1;
     }
     osDelay(1);
   }
@@ -288,9 +330,44 @@ void StarTest(void const * argument)
   /* Infinite loop */
   for(;;)
   {
+      static char p0 = 0;
+      if(p0)
+      {
+          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+          p0 = 0;
+      }
+      else
+      {
+          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+          p0 = 1;
+      }
+
+	
     osDelay(1);
   }
   /* USER CODE END StarTest */
+}
+
+/* USER CODE BEGIN Header_StartUart */
+/**
+* @brief Function implementing the UartTest thread.
+* @param argument: Not used
+* @retval None
+*/
+/* USER CODE END Header_StartUart */
+void StartUart(void const * argument)
+{
+  /* USER CODE BEGIN StartUart */
+  /* Infinite loop */
+  for(;;)
+  {
+    char UartTxBuf [20] = "hello\r\n";
+    
+//    printf("hello\r\n");
+    HAL_UART_Transmit(&huart1, UartTxBuf, 8, 0xff);
+    osDelay(1000);
+  }
+  /* USER CODE END StartUart */
 }
 
 /**
