@@ -48,6 +48,7 @@ osThreadId defaultTaskHandle;
 osThreadId GPIOTestHandle;
 osThreadId TaskTestHandle;
 osThreadId UartTestHandle;
+osSemaphoreId Sem1Handle;
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
@@ -106,6 +107,11 @@ int main(void)
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
+
+  /* Create the semaphores(s) */
+  /* definition and creation of Sem1 */
+  osSemaphoreDef(Sem1);
+  Sem1Handle = osSemaphoreCreate(osSemaphore(Sem1), 1);
 
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
@@ -252,13 +258,13 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0|GPIO_PIN_15, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_SET);
 
-  /*Configure GPIO pins : PA0 PA1 */
-  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1;
+  /*Configure GPIO pins : PA0 PA1 PA15 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0|GPIO_PIN_1|GPIO_PIN_15;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
@@ -313,6 +319,18 @@ void StartGPIO(void const * argument)
 		p1 = 1;
     }
     osDelay(1);
+
+    static char p0 = 0;
+    if(p0)
+    {
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
+      p0 = 0;
+    }
+    else
+    {
+      HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
+      p0 = 1;
+    }
   }
   /* USER CODE END StartGPIO */
 }
@@ -330,20 +348,9 @@ void StarTest(void const * argument)
   /* Infinite loop */
   for(;;)
   {
-      static char p0 = 0;
-      if(p0)
-      {
-          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_RESET);
-          p0 = 0;
-      }
-      else
-      {
-          HAL_GPIO_WritePin(GPIOA, GPIO_PIN_0, GPIO_PIN_SET);
-          p0 = 1;
-      }
-
-	
-    osDelay(1);
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_15);
+	osSemaphoreRelease(Sem1Handle);
+    osDelay(1000);
   }
   /* USER CODE END StarTest */
 }
@@ -364,8 +371,9 @@ void StartUart(void const * argument)
     char UartTxBuf [20] = "hello\r\n";
     
 //    printf("hello\r\n");
-    HAL_UART_Transmit(&huart1, UartTxBuf, 8, 0xff);
-    osDelay(1000);
+    osSemaphoreWait(Sem1Handle, osWaitForever);
+    HAL_UART_Transmit(&huart1, UartTxBuf, 7, 0xff);
+//    osDelay(1000);
   }
   /* USER CODE END StartUart */
 }
